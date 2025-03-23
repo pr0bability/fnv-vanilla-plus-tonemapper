@@ -1,0 +1,44 @@
+; Boost the sky dimmer in all IMODs associated to a weather.
+
+if eval !(IsPluginInstalled NewVegasReloaded)
+	float fSkyDimmerMult
+	float fSkyDimmerAdd
+
+	ref refIMOD
+
+	array_var aTime
+	array_var aWeather
+	array_var aWeathers = GLTA 53
+	array_var iMODs
+	array_var iMODiter
+
+	iMODs = Ar_Construct "array"
+
+	forEach aWeather <- aWeathers
+		forEach aTime <- Ar_Range 0 2 ; Iterate over day IMODs.
+			refIMOD = GetWeatherImageSpaceMod (*aWeather) (*aTime)
+			
+			if eval !isFormValid refIMOD
+				Continue
+			endif
+			
+			Ar_Append iMODs refIMOD
+		loop
+
+		refIMOD = GetWeatherImageSpaceMod (*aWeather) 4 ; Manually get high noon IMOD.
+		if eval isFormValid refIMOD
+			Ar_Append iMODs refIMOD
+		endif
+	loop
+
+	iMODs = Ar_Unique iMODs
+
+	forEach iMODiter <- iMODs
+		fSkyDimmerMult = GetImageSpaceModTrait (*iMODiter) 19
+		fSkyDimmerAdd = GetImageSpaceModTrait (*iMODiter) 20
+		SetImageSpaceModTrait (*iMODiter) 19 (fSkyDimmerMult * 1.25)
+		SetImageSpaceModTrait (*iMODiter) 20 (fSkyDimmerAdd * 1.25)
+	loop
+
+	let aTime := aWeather := aWeathers := iMODs := iMODiter := Ar_Null
+endif

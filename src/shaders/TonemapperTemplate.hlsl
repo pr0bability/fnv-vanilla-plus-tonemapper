@@ -29,7 +29,7 @@ float3 BlurScale : register(c2);
     float4 Cinematic : register(c19);   // x: saturation, y: average luminance value, z: contrast, w: brightness
     float4 Tint : register(c20);        // rgb: tint color, a: tint strength
     float4 Fade : register(c22);        // rgb: fade color, a: fade strength
-#endif
+ #endif
 
 #ifdef ALPHAMASK
     float4 UseAlphaMask : register(c23);
@@ -43,17 +43,20 @@ float luminance(float3 color) {
 float3 ApplyTonemapping(float3 color) {
     // Linearize input color first.
     color = pow(color, 2.2f);
+    
+    // Add a smidge more contrast.
+    float3 logX = log2(color + 0.0001);
+    float3 adjX = 0.18f + (logX - 0.18f) * 1.02f;
+    color = max(0.0f, exp2(adjX) - 0.0001);
 
-    // Apply curve in between Extended Reinhard and Jodie's Reinhard.
-    float maxWhite = 2.0f;  // Conservative value to avoid changing the aesthetics too much. 
-    float3 result = color * (1.0 + color / (maxWhite * maxWhite)) / (1.0 + color);
+    // Extended Reinhard applied to luminance only.
+    float maxWhite = 2.5f;
+    float l = luminance(color);
+    float newLuma = l * (1.0f + l / (maxWhite * maxWhite)) / (1.0f + l);
+    float3 result = color * (1.0f + l / (maxWhite * maxWhite)) / (1.0f + l);
     
     // Delinearize.
     result = pow(result, 1.0f / 2.2f);
-    
-    // Apply a tiny post-tonemap saturation adjustment
-    float luma = luminance(result);
-    result = lerp(luma.xxx, result, 1.05);
     
     return result;
 }
@@ -78,14 +81,13 @@ PS_OUTPUT main(PS_INPUT IN) {
         finalBlend = lerp(finalBlend.rgb, lum * Tint.rgb, Tint.a);
         // Brightness and contrast.
         finalBlend = Cinematic.w * finalBlend.rgb;
+        finalBlend = Cinematic.z * (finalBlend.rgb - Cinematic.y) + Cinematic.y;
     #endif
     
     // Tonemap.
     finalBlend = ApplyTonemapping(finalBlend.rgb);
     
     #ifdef CINEMATIC
-        // Contrast.
-        finalBlend = Cinematic.z * (finalBlend.rgb - Cinematic.y) + Cinematic.y;
         // Apply fade (night eye?).
         finalBlend = lerp(finalBlend.rgb, Fade.rgb, Fade.a);
     #endif
