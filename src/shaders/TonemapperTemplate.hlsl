@@ -1,14 +1,54 @@
 // Template for IS tonemapping shaders.
 //
+// VS
+//
+// ISHDRBLENDINSHADER
+// ISHDRBLENDINSHADERCIN
+// ISHDRBLEDINSHADERCINAM
+//
 // PS
+//
 // ISHDRBLENDINSHADER - SHBLEND, TONEMAP
 // ISHDRBLENDINSHADERCIN - CINEMATIC, SHBLEND, TONEMAP
 // ISHDRBLEDINSHADERCINAM - ALPHAMASK, CINEMATIC, SHBLEND, TONEMAP
 
 #if defined(__INTELLISENSE__)
+    #define VS
     #define CINEMATIC
     #define ALPHAMASK
 #endif
+
+#ifdef VS
+
+struct VS_INPUT {
+    float4 position : POSITION;
+    float4 baseUV : TEXCOORD0;
+};
+
+struct VS_OUTPUT {
+    float4 position : POSITION;
+    float2 screenEffectUV : TEXCOORD0;
+    float2 blendDestUV : TEXCOORD1;
+};
+
+float4 geometryOffset : register(c0);
+float4 texOffset0 : register(c1);
+float4 texOffset1 : register(c2);
+
+VS_OUTPUT main(VS_INPUT IN) {
+    VS_OUTPUT OUT;
+
+    OUT.position.xy = IN.position.xy - (int2(2, -2) * geometryOffset.xy);
+    OUT.position.zw = IN.position.zw;
+    OUT.screenEffectUV.xy = IN.baseUV.xy + texOffset0.xy;
+    OUT.blendDestUV.xy = IN.baseUV.xy + texOffset1.xy;
+
+    return OUT;
+};
+
+#endif // Vertex shaders.
+
+#ifdef PS
 
 struct PS_INPUT {
     float2 screenEffectUV : TEXCOORD0;
@@ -29,7 +69,7 @@ float3 BlurScale : register(c2);
     float4 Cinematic : register(c19);   // x: saturation, y: average luminance value, z: contrast, w: brightness
     float4 Tint : register(c20);        // rgb: tint color, a: tint strength
     float4 Fade : register(c22);        // rgb: fade color, a: fade strength
- #endif
+#endif
 
 #ifdef ALPHAMASK
     float4 UseAlphaMask : register(c23);
@@ -104,3 +144,5 @@ PS_OUTPUT main(PS_INPUT IN) {
     
     return OUT;
 }
+
+#endif // Pixel shaders.
