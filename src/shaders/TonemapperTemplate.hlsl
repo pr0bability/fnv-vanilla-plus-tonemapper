@@ -81,6 +81,9 @@ float luminance(float3 color) {
 }
 
 float3 ApplyTonemapping(float3 color) {
+    // Make sure the input color is not negative, some IMODs push the values negative.
+    color = max(0.0f, color);
+    
     // Linearize input color first.
     color = pow(color, 2.2f);
     
