@@ -13,7 +13,7 @@
 // ISHDRBLEDINSHADERCINAM - ALPHAMASK, CINEMATIC, SHBLEND, TONEMAP
 
 #if defined(__INTELLISENSE__)
-    #define VS
+    #define PS
     #define CINEMATIC
     #define ALPHAMASK
 #endif
@@ -92,7 +92,6 @@ float3 ApplyTonemapping(float3 color) {
     // Extended Reinhard applied to luminance only.
     float maxWhite = 2.5f;
     float l = luminance(color);
-    float newLuma = l * (1.0f + l / (maxWhite * maxWhite)) / (1.0f + l);
     float3 result = color * (1.0f + l / (maxWhite * maxWhite)) / (1.0f + l);
     
     // Delinearize.
